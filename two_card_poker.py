@@ -5,7 +5,7 @@ import sys
 
 def card_value(card):
     """ Convert card to a value for comparison. Assumes card is a string like '2H' or 'AD' """
-    value_dict = {'2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14}
+    value_dict = {'2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, 'T': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14}
     return value_dict[card[0]]
 
 def evaluate_hand(hand):
@@ -36,10 +36,19 @@ def compare_hands(player, opponent):
         return -1
     else:
         return 0
+    
+def compare_strength(score1, score2):
+    if score1 > score2:
+        return 1
+    elif score2 > score1:
+        return -1
+    else:
+        return 0
+    
 
 def create_deck():
-    suits = ['H', 'D', 'S', 'C']  # Hearts, Diamonds, Clubs, Spades
-    ranks = ['2', '3', '4', '5','6','7', '8', '9','10',]
+    suits = ['H', 'D', 'S', 'C'] 
+    ranks = ['2', '3', '4', '5','6','7', '8', '9','T', 'J', 'Q', 'K', 'A']
     
     deck = [rank + suit for suit in suits for rank in ranks]
     return deck
@@ -70,17 +79,13 @@ class poker_bot:
         n = len(history)
         is_player1 = n % 2 == 0
         if is_player1:
-            player_hand = [self.deck[0], self.deck[1]]
+            player_hand = evaluate_hand([self.deck[0], self.deck[1]])
+            opponent_hand = evaluate_hand([self.deck[2], self.deck[3]])
         else:
-            player_hand = [self.deck[2], self.deck[3]]
+            player_hand = evaluate_hand([self.deck[2], self.deck[3]])
+            opponent_hand = evaluate_hand([self.deck[0], self.deck[1]])
 
         if self.is_terminal(history):
-            if is_player1:
-                player_hand = [self.deck[0], self.deck[1]]
-                opponent_hand = [self.deck[2], self.deck[3]]
-            else:
-                player_hand = [self.deck[2], self.deck[3]]
-                opponent_hand = [self.deck[0], self.deck[1]]
             reward = self.get_reward(history, player_hand, opponent_hand)
             return reward
         
@@ -120,11 +125,11 @@ class poker_bot:
         double_bet = history[-2:] == "bb"
         if terminal_pass:
             if history[-2:] == 'pp':
-                return compare_hands(player_hand, opponent_hand)
+                return compare_strength(player_hand, opponent_hand)
             else:
                 return 1
         elif double_bet:
-            return 2 * compare_hands(player_hand, opponent_hand)
+            return 2 * compare_strength(player_hand, opponent_hand)
     
     def get_node(self, hand, history):
         key = str(hand) + " " + history
