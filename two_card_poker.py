@@ -55,16 +55,16 @@ def create_deck():
 
 class poker_bot:
     def __init__(self):
-        # Initialize params
-        self.node_map = {}
-        self.expected_game_value = 0
-        self.n_hands = 15
-        self.nash_equilibrium = dict()
-        self.current_player = 0
-        self.deck = create_deck()
-        self.n_actions = 2
+        self.node_map = {} # map the possible states
+        self.expected_game_value = 0 # track the expected value
+        self.current_player = 0 # track the current player
+        self.deck = create_deck() # create the deck
+        self.n_actions = 2 # total actions determine node splits
     
-    def train(self, n_iter = 50_000):
+    def train(self, n_iter):
+        """
+        Iterates over the cfr function and updates the strategy 
+        """
         expected_game_value = 0
         for _ in range(n_iter):
             random.shuffle(self.deck)
@@ -76,8 +76,14 @@ class poker_bot:
         display_results(expected_game_value, self.node_map)
     
     def cfr(self, history, pr_1, pr_2):
+        """
+        history: past moves played
+        pr_1: probability of playing the first option
+        pr_2: probabilitiy of playing the second option
+        """
         n = len(history)
         is_player1 = n % 2 == 0
+        
         if is_player1:
             player_hand = evaluate_hand([self.deck[0], self.deck[1]])
             opponent_hand = evaluate_hand([self.deck[2], self.deck[3]])
@@ -146,7 +152,7 @@ class Node:
         self.n_actions = n_actions
         self.regret_sum = np.zeros(self.n_actions)
         self.strategy_sum = np.zeros(self.n_actions)
-        self.action_dict = action_dict
+        self.action_dict = action_dict 
         self.strategy = np.repeat(1/self.n_actions, self.n_actions)
         self.reach_pr = 0
         self.reach_pr_sum = 0
