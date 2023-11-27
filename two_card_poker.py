@@ -2,6 +2,7 @@ import numpy as np
 import random
 import time
 import sys
+import pickle
 
 def card_value(card):
     """ Convert card to a value for comparison. Assumes card is a string like '2H' or 'AD' """
@@ -47,8 +48,8 @@ def compare_strength(score1, score2):
     
 
 def create_deck():
-    suits = ['H', 'D', 'S', 'C'] 
-    ranks = ['2', '3', '4', '5','6','7', '8', '9','T', 'J', 'Q', 'K', 'A']
+    suits = ['H', 'D'] #, 'S', 'C'] 
+    ranks = ['2', '3', '4'] #, '5','6','7', '8', '9','T', 'J', 'Q', 'K', 'A']
     
     deck = [rank + suit for suit in suits for rank in ranks]
     return deck
@@ -204,7 +205,8 @@ def display_results(ev, i_map):
 if __name__ == "__main__":
     time1 = time.time()
     trainer = poker_bot()
-    trainer.train(n_iter=10**7)
+    trainer.train(n_iter=10**5)
     print(abs(time1 - time.time()))
     print(sys.getsizeof(trainer))
 
+pickle.dump(trainer, open( "save.p", "wb" ) )
