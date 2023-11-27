@@ -60,7 +60,7 @@ class poker_bot:
         self.current_player = 0 # track the current player
         self.deck = create_deck() # create the deck
         self.n_actions = 2 # total actions determine node splits
-        self.epsilon = 0.14
+        self.epsilon = 0.24
     
     def train(self, n_iter):
         """
@@ -68,7 +68,8 @@ class poker_bot:
         """
         expected_game_value = 0
         for i in range(n_iter):
-
+            if i % 1000 == 0:
+                print(i)
             # update final strategy after burn in
             if i == n_iter // 2:
                 for _, v in self.node_map.items():
@@ -223,6 +224,6 @@ def display_results(i_map):
 if __name__ == "__main__":
     time1 = time.time()
     trainer = poker_bot()
-    trainer.train(n_iter=50000)
+    trainer.train(n_iter=10**6)
     print(abs(time1 - time.time()))
 
