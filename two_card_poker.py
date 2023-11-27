@@ -60,31 +60,36 @@ class poker_bot:
         self.current_player = 0 # track the current player
         self.deck = create_deck() # create the deck
         self.n_actions = 2 # total actions determine node splits
+        self.epsilon = 0.14
     
     def train(self, n_iter):
         """
         Iterates over the cfr function and updates the strategy 
         """
         expected_game_value = 0
-        for _ in range(n_iter):
+        for i in range(n_iter):
+
+            # update final strategy after burn in
+            if i == n_iter // 2:
+                for _, v in self.node_map.items():
+                    v.strategy_sum = np.zeros(v.n_actions)
+
             random.shuffle(self.deck)
-            expected_game_value += self.cfr('', 1, 1)
-            for _, v in self.node_map.items():
-                v.update_strategy()
-            
-        expected_game_value /= n_iter
-        display_results(expected_game_value, self.node_map)
+            for j in range(2):
+                self.current_player = j
+                self.cfr('', 1, 1, 1)
+        
+        display_results(self.node_map)
     
-    def cfr(self, history, pr_1, pr_2):
+    def cfr(self, history, p1_reach, p2_reach, sample_reach):
         """
         history: past moves played
         pr_1: probability of playing the first option
         pr_2: probabilitiy of playing the second option
         """
         n = len(history)
-        is_player1 = n % 2 == 0
-        
-        if is_player1:
+        player = n % 2
+        if player == 0:
             player_hand = evaluate_hand([self.deck[0], self.deck[1]])
             opponent_hand = evaluate_hand([self.deck[2], self.deck[3]])
         else:
@@ -93,33 +98,43 @@ class poker_bot:
 
         if self.is_terminal(history):
             reward = self.get_reward(history, player_hand, opponent_hand)
-            return reward
+            return reward / sample_reach, 1
         
         node = self.get_node(player_hand, history)
-        strategy = node.strategy
+        strategy = node.get_strategy()
 
-        # Create a place to store payoffs
-        action_utils = np.zeros(self.n_actions)
-
-        # Find possible payoffs for both actions
-        for act in range(self.n_actions):
-            next_history = history + node.action_dict[act]
-            if is_player1:
-                action_utils[act] = -1 * self.cfr(next_history, pr_1 * strategy[act], pr_2)
-            else:
-                action_utils[act] = -1 * self.cfr(next_history, pr_1, pr_2 * strategy[act])
-
-        util = sum(action_utils * strategy)
-        regrets = action_utils - util
-        if is_player1:
-            node.reach_pr += pr_1
-            node.regret_sum += pr_2 * regrets
+        if player == self.current_player:
+            # epsilon exploration
+            probability = self.sample_strategy(strategy)
         else:
-            node.reach_pr += pr_2
-            node.regret_sum += pr_1 * regrets
+            probability = node.strategy
 
-        return util
+        act = node.get_action(probability)
+        next_history = history + node.action_dict[act]
 
+        if player == 0:
+            util, p_tail = self.cfr(next_history, p1_reach * node.strategy[act], p2_reach, sample_reach * probability[act])
+        else:
+            util, p_tail = self.cfr(next_history, p1_reach,  p2_reach * node.strategy[act], sample_reach * probability[act])
+        util *= -1
+        my_reach = p1_reach if player == 1 else p2_reach
+        opp_reach = p2_reach if player == 0 else p1_reach
+        if player == self.current_player:
+            W = util * opp_reach
+            for a in range(len(strategy)):
+                regret = W * (1.0 - strategy[act]) * p_tail if a == act else -W * p_tail * strategy[act]
+                node.regret_sum[a] += regret
+        else:
+            for a in range(len(node.strategy_sum)):
+                node.strategy_sum[a] += (my_reach * node.strategy[a]) / sample_reach
+        return util, p_tail * node.strategy[act]
+
+    def sample_strategy(self, strategy):
+        for i in range(len(strategy)):
+            strategy[i] = (self.epsilon * np.repeat(1 / self.n_actions, self.n_actions)[i] +
+                           (1 - self.epsilon) * strategy[i])
+        return strategy 
+    
     @staticmethod
     def is_terminal(history):
         if history[-2:] == 'pp' or history[-2:] == "bb" or history[-2:] == 'bp':
@@ -150,12 +165,13 @@ class Node:
     def __init__(self, key, action_dict, n_actions=2):
         self.key = key
         self.n_actions = n_actions
+        self.action_dict = action_dict
+        self.possible_actions = np.arange(self.n_actions)
+
         self.regret_sum = np.zeros(self.n_actions)
         self.strategy_sum = np.zeros(self.n_actions)
-        self.action_dict = action_dict 
-        self.strategy = np.repeat(1/self.n_actions, self.n_actions)
-        self.reach_pr = 0
-        self.reach_pr_sum = 0
+        self.strategy = np.repeat(1 / self.n_actions, self.n_actions)
+        self.average_strategy = np.repeat(1 / self.n_actions, self.n_actions)
 
     def update_strategy(self):
         self.strategy_sum += self.reach_pr * self.strategy
@@ -164,19 +180,27 @@ class Node:
         self.reach_pr = 0
 
     def get_strategy(self):
-        regrets = self.regret_sum
-        regrets[regrets < 0] = 0
-        normalizing_sum = sum(regrets)
+        self.strategy = self.regret_sum
+        for i in range(len(self.regret_sum)):
+            if self.regret_sum[i] < 0:
+                self.strategy[i] = 0
+        normalizing_sum = sum(self.strategy)
         if normalizing_sum > 0:
-            return regrets / normalizing_sum
+            self.strategy = self.strategy / normalizing_sum
         else:
-            return np.repeat(1/self.n_actions, self.n_actions)
+            self.strategy = np.repeat(1 / self.n_actions, self.n_actions)
+        return self.strategy
+    
+    def get_action(self, strategy):
+        return np.random.choice(self.possible_actions, p=strategy)
 
     def get_average_strategy(self):
-        strategy = self.strategy_sum / self.reach_pr_sum
-        # Re-normalize
-        total = sum(strategy)
-        strategy /= total
+        strategy = self.strategy_sum
+        normalizing_sum = np.sum(strategy)
+        if normalizing_sum > 0:
+            strategy = strategy / normalizing_sum
+        else:
+            strategy = np.repeat(1 / self.n_actions, self.n_actions)
         return strategy
 
     def __str__(self):
@@ -184,11 +208,7 @@ class Node:
                       for x in self.get_average_strategy()]
         return '{} {}'.format(self.key.ljust(6), strategies)
 
-def display_results(ev, i_map):
-    print('player 1 expected value: {}'.format(ev))
-    print('player 2 expected value: {}'.format(-1 * ev))
-
-    print()
+def display_results(i_map):
     print('player 1 strategies:')
     sorted_items = sorted(i_map.items(), key=lambda x: x[0])
     for _, v in filter(lambda x: len(x[0]) % 2 == 0, sorted_items):
@@ -199,10 +219,10 @@ def display_results(ev, i_map):
         print(v)
 
 
+
 if __name__ == "__main__":
     time1 = time.time()
     trainer = poker_bot()
-    trainer.train(n_iter=100000)
+    trainer.train(n_iter=50000)
     print(abs(time1 - time.time()))
-    print(sys.getsizeof(trainer))
 
