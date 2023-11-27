@@ -67,6 +67,8 @@ class poker_bot:
         """
         expected_game_value = 0
         for _ in range(n_iter):
+            if _ % 10000 == 0:
+                print(_)
             random.shuffle(self.deck)
             expected_game_value += self.cfr('', 1, 1)
             for _, v in self.node_map.items():
@@ -202,7 +204,7 @@ def display_results(ev, i_map):
 if __name__ == "__main__":
     time1 = time.time()
     trainer = poker_bot()
-    trainer.train(n_iter=100000)
+    trainer.train(n_iter=10**7)
     print(abs(time1 - time.time()))
     print(sys.getsizeof(trainer))
 
