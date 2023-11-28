@@ -1,4 +1,4 @@
-from two_card_poker import poker_bot
+from cfr import poker_bot
 import time
 import sys
 import pickle
