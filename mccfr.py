@@ -220,10 +220,3 @@ def display_results(i_map):
         print(v)
 
 
-
-if __name__ == "__main__":
-    time1 = time.time()
-    trainer = poker_bot()
-    trainer.train(n_iter=10**7)
-    print(abs(time1 - time.time()))
-
