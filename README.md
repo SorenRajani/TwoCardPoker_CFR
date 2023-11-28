@@ -6,10 +6,9 @@ Instead of running the algorithm on all possible hands, I chose to instead alias
 # Files
 cfr.py: This file specifies the counterfactual regret minimisation algorithm \
 mccfr.py: This file specifices the monte carlo cfr algorithm \
-train.py: This algorithm imports from either cfr or mccfr and produces a pickled bot \ 
+train.py: This algorithm imports from either cfr or mccfr and produces a pickled bot \
 test_game.ipynb: This game goes over a simple method to interact with the bot \
-bot.p: This is the pickled file of the bot, if you want to play against it you can download this and the notebook \
-
+bot.p: This is the pickled file of the bot, if you want to play against it you can download this and the notebook 
 # References:
 This project is based on the following papers: 
 * https://proceedings.neurips.cc/paper/2012/file/3df1d4b96d8976ff5986393e8767f5b2-Paper.pdf
