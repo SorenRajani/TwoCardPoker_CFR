@@ -48,7 +48,7 @@ def compare_strength(score1, score2):
     
 
 def create_deck():
-    suits = ['H', 'D' 'S', 'C'] 
+    suits = ['H', 'D', 'S', 'C'] 
     ranks = ['2', '3', '4', '5','6','7', '8', '9','T', 'J', 'Q', 'K', 'A']
     
     deck = [rank + suit for suit in suits for rank in ranks]
