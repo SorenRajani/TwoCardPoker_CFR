@@ -167,7 +167,7 @@ class poker_game:
                             print(f'The bot had {bot_hand}')
                             print('You have won!')
                         elif compare_hands(player_hand, bot_hand) < 0:
-                            self.player_chips += pot
+                            self.bot_chips += pot
                             print(f'The bot had {bot_hand}')
                             print('The bot wins')  
                     
@@ -205,7 +205,7 @@ class poker_game:
                                 print(f'The bot had {bot_hand}')
                                 print('You have won!')
                             elif compare_hands(player_hand, bot_hand) < 0:
-                                self.player_chips += pot
+                                self.bot_chips += pot
                                 print(f'The bot had {bot_hand}')
                                 print('The bot wins')
                 
@@ -220,7 +220,7 @@ class poker_game:
                             print(f'The bot had {bot_hand}')
                             print('You have won!')
                         elif compare_hands(player_hand, bot_hand) < 0:
-                            self.player_chips += pot
+                            self.bot_chips += pot
                             print(f'The bot had {bot_hand}')
                             print('The bot wins')
         
