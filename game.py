@@ -54,7 +54,7 @@ class poker_game:
             pot = 20
             random.shuffle(self.deck)
             player_hand = [self.deck[0],self.deck[1]]
-            bot_hand = [self.deck[1],self.deck[2]]
+            bot_hand = [self.deck[2],self.deck[3]]
             history = ''
             
 
